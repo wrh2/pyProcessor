@@ -1,0 +1,123 @@
+{ "metadata": { "name": "", "signature":
+"sha256:d135ddae606ac427500ce15703c9674c121a26291fd71e83ce04e8d362e4cb03"
+}, "nbformat": 3, "nbformat\_minor": 0, "worksheets": \[ { "cells": \[ {
+"cell\_type": "markdown", "metadata": {}, "source": \[ "by William
+Harrington\n", "\n", "\#\#\# International Data Encryption Algorithm\n",
+"\n", "The International Data Encryption Algorithm (IDEA) is a
+symmetric-key block cipher that operates on 64-bit plaintext blocks. The
+encryption key is 128-bits long, and the same algorithm is used for both
+encryption and decryption. IDEA uses Exclusive-OR ($\\oplus$), addition
+modulo $2^{16}$ ($\\boxplus$), and multiplcation modulo $2^{16} + 1$
+($\\odot$) operations during its "rounds" for encryption and decryption.
+All operations are performed on 16-bit sub-blocks with a 16-bit
+subkey.\n", "\n", "\#\#\#\# Operations\n", "\n", "Understanding these
+operations are critical for implementing an application specific
+processor to perform the IDEA algorithm. In this section, I explore the
+IDEA algorithm by coding it in Python at a high level to verify the
+behavior.\n", "\n", "\#\#\#\#\# Addition modulo $2^{16}$\n", "\n",
+"Addition modulo $2^{16}$ is defined as $a+b\\mod{2^{16}}$. The additive
+inverse of an operand for this operation is the twos compliment of the
+operand (i.e. \~a+1). As an example, if $Sum=a+b\\mod{2^{16}}$ then
+$a=Sum+$(\~b+1)$\\mod{2^{16}}$. The following code implements this
+operation with a = 1 and runs a couple of random test cases to verify
+the behavior." \] }, { "cell\_type": "code", "collapsed": false,
+"input": \[ "from myhdl import *\n", "from IDEA import *\n", "\n", "\#
+generate random test cases\n", "numbers = \[randint(0,15) for x in
+range(4)\]\n", "\n", "\# my number\n", "mynum = 1\n", "\n", "\# iterate
+through test cases, only looking at first 4 bits\n", "for i in
+numbers:\n", " print 'mynum + i: %s, inverse(i): %s, (mynum + i) +
+inverse(i): %s' % \\\n", " (bin(addition(mynum, i)\[4:\]),\n", "
+bin(inv\_addition(i)\[4:\]),\n", " addition(addition(mynum, i),
+inv\_addition(i))\[4:\])" \], "language": "python", "metadata": {},
+"outputs": \[ { "output\_type": "stream", "stream": "stdout", "text": \[
+"mynum + i: 101, inverse(i): 1100, (mynum + i) + inverse(i): 1\n",
+"mynum + i: 1000, inverse(i): 1001, (mynum + i) + inverse(i): 1\n",
+"mynum + i: 1101, inverse(i): 100, (mynum + i) + inverse(i): 1\n",
+"mynum + i: 100, inverse(i): 1101, (mynum + i) + inverse(i): 1\n" \] }
+\], "prompt\_number": 1 }, { "cell\_type": "markdown", "metadata": {},
+"source": \[ "\#\#\#\#\# Multiplication Modulo $2^{16} + 1$\n", "\n",
+"Multiplication Modulo $2^{16} + 1$ is defined as
+$a \\times b\\mod{2^{16} + 1}$. To perform multiplication modulo
+$2^{16} + 1$, two numbers say A and B are multiplied together and that
+product is then modded with $2^{16} + 1$. If A or B is equal to 0, this
+is interpreted as $2^{16}$. The MyHDL library handles this behavior with
+the modular bit vector type (modbv).\n", "\n", "Their
+documentation$^{[3]}$ explains the behavior as follows:\n",
+"`\n",       "val = (val - min) % (max - min) + min\n",       "`\n",
+"Where val is the value specified in the modbv declaration.\n", "\n",
+"The multiplicative inverse of some number say $X$, where $X\\neq 0$ is
+$X^{p\u22122}\\mod{p}$, where p is $2^{16}+1$ $^{[4]}$. As an example,
+if $Product = a\\times b\\mod{2^{16} + 1}$ then a =
+$Product \\times b^{(2^{16}+1)\u22122}\\mod{2^{16}+1}$. The following
+code implements this operation with a = 1 and runs a couple of random
+test cases to verify the behavior." \] }, { "cell\_type": "code",
+"collapsed": false, "input": \[ "\# generate random test cases\n",
+"numbers = \[randint(0,15) for x in range(4)\]\n", "\n", "\# iterate
+over test cases, only looking at the first 4-bits of the results\n",
+"for i in numbers:\n", " print 'mynum \* i: %s, inverse(i): %s, (mynum
+\* i) \* inverse(i): %s' % \\\n", " (bin(multiply(mynum, i)\[4:\]),\n",
+" bin(inv\_mult(i)\[4:\]),\n", " multiply(multiply(mynum, i),
+inv\_mult(i))\[4:\])" \], "language": "python", "metadata": {},
+"outputs": \[ { "output\_type": "stream", "stream": "stdout", "text": \[
+"mynum \* i: 1101, inverse(i): 100, (mynum \* i) \* inverse(i): 1\n",
+"mynum \* i: 1011, inverse(i): 110, (mynum \* i) \* inverse(i): 1\n",
+"mynum \* i: 1100, inverse(i): 110, (mynum \* i) \* inverse(i): 1\n",
+"mynum \* i: 10, inverse(i): 1, (mynum \* i) \* inverse(i): 1\n" \] }
+\], "prompt\_number": 2 }, { "cell\_type": "markdown", "metadata": {},
+"source": \[ "\#\#\#\# Key scheduling\n", "\n", "The algorithm uses 52
+subkeys: six for each of the eight rounds and four more for the output
+transformation. In order to do this, the original key is broken up into
+six subkeys then rotated left by 25 bits. This is done until all 52
+subkeys are created.\n", "\n", "\#\#\#\# Algorithm for
+Encryption/Decryption\n", "\n", "The encryption and decryption algorithm
+is composed of 8 "rounds" that take 14 identical steps followed by a
+final output transformation that is referred to as a "half-round". The
+operations are performed with a 64-bit plaintext block and a 128-bit
+key. The plaintext block is separated into four 16-bit sub-blocks:
+$X_1, X_2, X_3, X_4$. The key is eventually broken down into 52
+sub-keys. However, it is first split up into eight 16-bit sub-keys:
+$K_1,....,K_8$. The first six ($K_1,..,K_6$) are used in the first round
+and the last two ($K_7, K_8$) are the first two used in the second
+round. The key is then rotated 25 bits to the left and split up into
+eight more 16-bit sub-keys: $K_9,...,K_{16}$. The first four
+($K_9,..,K_{12}$) are used in round two after $K_7, K_8$; the last four
+are used in round 3. The key is rotated to the left again 25-bits to
+obtain the next eight subkeys, and so on until the end of the
+algorithm.$^{[5]}$\n", "\n", "The steps for each round are listed below.
+Exclusive-OR = $\\oplus$, Addition modulo $2^{16}$ = $\\boxplus$, and
+Multiplcation modulo $2^{16} + 1$ = $\\odot$.\n", "\n", "| Step |
+Operation | Step | Operation |\n", "| --- | ----------------------- |
+---- | ---------------------- |\n", "| 1. | $X_1$ $\\odot$ $K_1$ | 8. |
+Step6 $\\boxplus$ Step7 |\n", "| 2. | $X_2$ $\\boxplus$ $K_2$ | 9. |
+Step8 $\\odot$ $K_6$ |\n", "| 3. | $X_3$ $\\boxplus$ $K_3$ | 10. | Step7
+$\\boxplus$ Step9 |\n", "| 4. | $X_4$ $\\odot$ $K_4$ | 11. | Step1
+$\\oplus$ Step9 |\n", "| 5. | Step1 $\\oplus$ Step3 | 12. | Step3
+$\\oplus$ Step9 |\n", "| 6. | Step2 $\\oplus$ Step4 | 13. | Step2
+$\\oplus$ Step10 |\n", "| 7. | Step5 $\\odot$ $K_5$ | 14. | Step4
+$\\oplus$ Step10 |\n", "\n", "The output of the round is the four
+sub-blocks: $O_1$, $O_2$, $O_3$, $O_4$ that are the results of steps 11,
+12, 13, and 14. These are the input to the next round. This happens
+eight times and on the eight round the inner blocks are swapped then
+followed by a final output transformation.\n", "\n", "The final output
+transformation consists of the following four steps:\n", "\n", "| Step |
+Operation | Step | Operation |\n", "| --- | ----------------------- |
+---- | ---------------------- |\n", "| 1. | $X_1$ $\\odot$ $K_1$ | 3. |
+$X_3$ $\\boxplus$ $K_3$ |\n", "| 2. | $X_2$ $\\boxplus$ $K_2$ | 4. |
+$X_4$ $\\odot$ $K_4$ |\n", "\n", "These four steps are then combined to
+produce the cipher test. For decryption, the keys are used in reverse
+order and are either the additive or multiplicative inverses of the
+encryption subkeys.\n", "\n", "The following code performs encryption
+with the following values: plaintext=0x20822C1109510840,
+key=0x7802c45144634a43fa10a15c405a4a42. The ciphertext should be equal
+to 0x627bbcdcbe7bd9ac.\n", "\n", "Tools like this one:
+http://lpb.canb.auug.org.au/adfa/src/IDEAcalc/ can be used for verifying
+this behavior" \] }, { "cell\_type": "code", "collapsed": false,
+"input": \[ "plaintext = modbv(0x20822C1109510840)\[64:\]\n", "key =
+modbv(0x7802c45144634a43fa10a15c405a4a42)\[128:\] \n", "keys =
+create\_subkeys(key)\n", "\n", "ciphertext = encrypt(plaintext,
+keys)\n", "print 'Plaintext: %s' % hex(plaintext)\n", "print
+'Ciphertext: %s' % hex(ciphertext)" \], "language": "python",
+"metadata": {}, "outputs": \[ { "output\_type": "stream", "stream":
+"stdout", "text": \[ "Plaintext: 0x20822c1109510840L\n", "Ciphertext:
+0x627bbcdcbe7bd9acL\n" \] } \], "prompt\_number": 3 } \], "metadata": {}
+} \] }
