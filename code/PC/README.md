@@ -1,11 +1,27 @@
 # Program Counter
 
-A simple program counter. Incremenets when EN signal is asserted. LOAD signal latches address on ADDR bus and makes it next address.
+A simple program counter modelled with MyHDL.
+
+## Functional description
+
+Incremenets by 4 when EN signal is asserted. Load signal causes Value to be next output of progam counter.
+
+### Signals
+
+#### Inputs
+
+* EN - Enable, control signal for incrementing counter
+* Load - Control signal for loading value into program counter
+* Value - Value to load into program counter, loaded when load signal asserted
+
+#### Outputs
+
+* Output - Counter value 
 
 ## Testbench
 
-Test basic functionality over 2000 timesteps
+Tests functionality described above over 2000 timesteps
 
 ### Example usage
 
-python testbench.py
+    python testbench.py
