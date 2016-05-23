@@ -34,7 +34,6 @@ def PC(output, value, en, load):
 
 				# otherwise, increment output by 4
 				output.next += 0x4
-				#output.next += 0x1
 	return update
 
 def pc_testbench():
@@ -106,7 +105,7 @@ def simulate(timesteps):
 
 def main():
 	# call simulation for 2000 steps
-	simulate(2000)
+	simulate(200)
 
 if __name__ == '__main__':
 	main()
