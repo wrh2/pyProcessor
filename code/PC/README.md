@@ -20,8 +20,12 @@ Incremenets by 4 when EN signal is asserted. Load signal causes Value to be next
 
 ## Testbench
 
-Tests functionality described above over 2000 timesteps
+Tests functionality described above over 1000 timesteps
 
 ### Example usage
 
     python testbench.py
+
+### Testing
+
+The test directory contains testing documentation for the program counter along with vcd files from the testbench.
