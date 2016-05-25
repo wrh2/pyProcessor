@@ -2,6 +2,10 @@
 
 A simple program counter modelled with MyHDL.
 
+## Contents
+
+This folder contains the program counter module (PC.py) and a testbench for it (testbench.py). The Test folder contains testing documentation for the program counter along with vcd files from the testbench.
+
 ## Functional description
 
 Incremenets by 4 when EN signal is asserted. Load signal causes Value to be next output of progam counter.
@@ -25,7 +29,3 @@ Tests functionality described above over 1000 timesteps
 ### Example usage
 
     python testbench.py
-
-### Testing
-
-The test directory contains testing documentation for the program counter along with vcd files from the testbench.
