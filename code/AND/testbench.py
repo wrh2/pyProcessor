@@ -1,32 +1,6 @@
-"""
-	Simple 4 way AND module
-
-	Programmed by William Harrington
-	ECE486 Final Project
-"""
 from myhdl import *
 from random import randrange
-
-def logic_AND(a0, b0, a1, b1, a2, b2, a3, b3, r0, r1, r2, r3):
-	"""
-	Module for comparator
-
-	:param input a: 4 bit wide input to compare with b
-	:param input b: 4 bit wide input to compare with a
-	"""
-
-	@always_comb
-	def compare_logic():
-		"""
-		Simple comparison of each pair of inputs (ai, bi)
-		where i is an element of range(4) (i.e. 0,1..,3)
-		"""
-		r0.next = a0 & b0
-		r1.next = a1 & b1
-		r2.next = a2 & b2
-		r3.next = a3 & b3
-
-	return instances()
+from AND import logic_AND
 
 def AND_testbench():
 	""" Initialize signals """
