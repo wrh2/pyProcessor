@@ -47,8 +47,9 @@ def generate_hex(fname):
 			concat(AND, modbv(randrange(2**8))[8:], modbv(randrange(2**8))[8:], modbv(randrange(2**8))[8:]),
 			concat(XOR, modbv(randrange(2**8))[8:], modbv(randrange(2**8))[8:], modbv(randrange(2**8))[8:])]
 	f = open(fname, 'w')
-	for i in instructions:
-		f.write(hex(i)+'\n')
+	for i in range(10):
+		for i in instructions:
+			f.write(hex(i)+'\n')
 	f.close()
 
 def str2hex(string):
