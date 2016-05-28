@@ -12,35 +12,57 @@
 from myhdl import *
 from random import randrange
 
-def ALU(result, op, a, b, Z, E, P, N, rdy, clk, width=16):
-	"""
-	Module for Arithmetic Logic Unit
-
-	:param input op: op code
-	:param input a: operand A
-	:param input b: operand B
-	:param output result: result of operation
-        """
-	cycles = 0
-	prop = Signal(modbv(0)[width:])
+def ALU(result, op, a, b, Z, E, P, N, clk, width=16):
+	addition = Signal(modbv(0)[width:], delay=20)
+	subtraction = Signal(modbv(0)[width:], delay=20)
+	multiplication = Signal(modbv(0)[width:], delay=700)
+	normalOR = Signal(modbv(0)[width:], delay=20)
+	normalAND = Signal(modbv(0)[width:], delay=20)
+	exclusiveOR = Signal(modbv(0)[width:], delay=20)
 
 	@always_comb
 	def ALU_logic():
 		""" Logic for ALU """
+		if op == 0x0:
+			addition.next = modbv(a+b)[width:]
+		if op == 0x1:
+			subtraction.next = modbv(a-b)[width:]
+		if op == 0x2:
+			multiplication.next = modbv(a*b)[width:]
+		if op == 0x3:
+			normalOR.next = modbv(a|b)[width:]
 		if op == 0x4:
-			prop.next = modbv(a+b)[width:]
+			normalAND.next = modbv(a&b)[width:]
 		if op == 0x5:
-			prop.next = modbv(a-b)[width:]
-		if op == 0x6:
-			prop.next = modbv(a*b)[width:]
-		if op == 0x7:
-			prop.next = modbv(a%b)[width:]
-		if op == 0x20:
-			prop.next = modbv(a|b)[width:]
-		if op == 0x28:
-			prop.next = modbv(a&b)[width:]
-		if op == 0x30:
-			prop.next = modbv(a^b)[width:]
+			exclusiveOR.next = modbv(a^b)[width:]
+
+	@always(addition)
+	def output_add():
+		result.next = addition
+
+	@always(subtraction)
+	def output_sub():
+		result.next = subtraction
+
+	@always(multiplication)
+	def output_mult():
+		result.next = multiplication
+
+	@always(multiplication)
+	def output_mult():
+		result.next = multiplication
+
+	@always(normalOR)
+	def output_normOR():
+		result.next = normalOR
+
+	@always(normalAND)
+	def output_normAND():
+		result.next = normalAND
+
+	@always(exclusiveOR)
+	def output_xOR():
+		result.next = exclusiveOR
 
 	@always_comb
 	def checkConditions():
@@ -59,72 +81,13 @@ def ALU(result, op, a, b, Z, E, P, N, rdy, clk, width=16):
 		else:
 			P.next = bool(0)
 
-		if result.next < 0:
+		if (op == 0x0) and (a+b < 0):
+			N.next = bool(1)
+		elif (op == 0x1) and (a-b < 0):
+			N.next = bool(1)
+		elif (op == 0x2) and (a*b < 0):
 			N.next = bool(1)
 		else:
 			N.next = bool(0)
-
-	def checkRdy():
-		if rdy:
-			rdy.next = bool(0)
-		else:
-			rdy.next = bool(1)
-
-	@instance
-	def ready():
-		while True:
-			yield prop
-			checkRdy()
-			# mult op
-			if op == 0x6:
-				cycles = 116 
-			# add/sub/mod op
-			elif op == 0x4 or op == 0x5 or op == 0x7:
-				cycles = 8
-			else:
-				cycles = 1
-			for i in range(cycles):
-				yield clk.negedge
-                	checkRdy()
-
-	@instance
-        def prop_delay():
-		"""
-                This function models the prop delay for the ALU.
-		
-		The ALU is essentially just a combination of
-		combinational circuits that perform the operation.
-		For instance, the add and subtract operations
-		are performed with an adder-subtractor circuit
-		that has a set propagation delay (Tpd) for each stage.
-		This model is for a ripple-carry adder/subtractor.
-		This means the total prop delay for an add/subtract operation
-		is Tpd * number of bits.
-
-		The worst case operation is multiplication.
-		For multiplication, the delay is Tpd * (number of bits)^2
-
-		Clock speed = 50MHz,
-		Clock period = 20ns,
-                Tpd = 9ns,
-		number of bits = 16
-
-		for mult, delay = ceiling((16*16*9)/20) = 116
-		for add/sub, delay = ceiling(16*9) = 8
-		"""
-		while True:
-			yield prop
-			# mult op
-			if op == 0x6:
-				cycles = 116 
-			# add/sub/mod op
-			elif op == 0x4 or op == 0x5 or op == 0x7:
-				cycles = 8
-			else:
-				cycles = 1
-
-			for i in range(cycles):
-				yield clk.negedge
-			result.next = prop
-
+	
 	return instances()
