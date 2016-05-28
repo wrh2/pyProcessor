@@ -12,7 +12,7 @@
 from myhdl import *
 from random import randrange
 
-def ALU(result, op, a, b, Z, E, P, N, clk, width=16):
+def ALU(result, op, a, b, Z, E, P, N, rdy, width=16):
 	addition = Signal(modbv(0)[width:], delay=20)
 	subtraction = Signal(modbv(0)[width:], delay=20)
 	multiplication = Signal(modbv(0)[width:], delay=700)
@@ -89,5 +89,14 @@ def ALU(result, op, a, b, Z, E, P, N, clk, width=16):
 			N.next = bool(1)
 		else:
 			N.next = bool(0)
+
+	@instance
+	def nextOp():
+		while True:
+			yield result
+			rdy.next = not rdy
+			yield a,b,op
+			yield delay(5)
+			rdy.next = not rdy
 	
 	return instances()

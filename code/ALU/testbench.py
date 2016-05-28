@@ -11,11 +11,11 @@ def ALU_testbench():
 	clk = Signal(bool(0))
 	cycles = Signal(0)
         Z, E, P, N = [Signal(bool(0)) for i in range(4)]
-	rdy = Signal(bool(1))
+	rdy = Signal(bool(0))
 
 	""" ALU instance """
 	ALU_inst = ALU(result, op, a, b,
-		       Z, E, P, N, clk)
+		       Z, E, P, N, rdy)
 
 	""" clock generator """
 	@always(delay(10))
@@ -27,14 +27,12 @@ def ALU_testbench():
 	def clkcount():
 		cycles.next += 1
 
+	""" stimulus for simulation """
 	@always(result)
-	def nextOp():
+	def stimulus():
 		# advance to next op
 		op.next += 1
 
-	""" stimulus for simulation """
-	@always(rdy)
-	def stimulus():
 		# generate random operands
 		a.next = modbv(randrange(2**16))[16:]
                 b.next = modbv(randrange(2**16))[16:]
