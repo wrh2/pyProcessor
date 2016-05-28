@@ -33,5 +33,8 @@ def PC(output, value, en, load):
 			else:
 
 				# otherwise, increment output by 4
-				output.next += 0x4
+				#output.next += 0x4
+
+				# increment by 1
+				output.next += 0x1
 	return update
