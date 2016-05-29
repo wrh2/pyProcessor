@@ -19,6 +19,7 @@ def ALU(result, op, a, b, Z, E, P, N, rdy, width=16):
 	normalOR = Signal(modbv(0)[width:], delay=20)
 	normalAND = Signal(modbv(0)[width:], delay=20)
 	exclusiveOR = Signal(modbv(0)[width:], delay=20)
+	mod_mult = Signal(modbv(0)[width:], delay=700)
 
 	@always_comb
 	def ALU_logic():
@@ -35,6 +36,26 @@ def ALU(result, op, a, b, Z, E, P, N, rdy, width=16):
 			normalAND.next = modbv(a&b)[width:]
 		if op == 0x5:
 			exclusiveOR.next = modbv(a^b)[width:]
+		if op == 0x6:
+			result.next = modbv(0x6)[width:]
+		if op == 0x7:
+			result.next = modbv(0x7)[width:]
+		if op == 0x8:
+			result.next = modbv(0x8)[width:]
+		if op == 0x9:
+			result.next = modbv(0x9)[width:]
+		if op == 0xA:
+			result.next = modbv(0xA)[width:]
+		if op == 0xB:
+			result.next = modbv(0xB)[width:]
+		if op == 0xC:
+			result.next = modbv(0xC)[width:]
+		if op == 0xD:
+			result.next = modbv(0xD)[width:]
+		if op == 0xE:
+			result.next = modbv(0xE)[width:]
+		if op == 0xF:
+			mod_mult.next = modbv((a*b) % ((2**width)+1))[width:]
 
 	@always(addition)
 	def output_add():
@@ -63,6 +84,10 @@ def ALU(result, op, a, b, Z, E, P, N, rdy, width=16):
 	@always(exclusiveOR)
 	def output_xOR():
 		result.next = exclusiveOR
+
+	@always(mod_mult)
+	def output_modmult():
+		result.next = mod_mult
 
 	@always_comb
 	def checkConditions():

@@ -63,7 +63,7 @@ def simulate(timesteps):
 	sim.run(timesteps)
 
 def main():
-	simulate(1000)
+	simulate(2000)
 
 if __name__ == '__main__':
 	main()
