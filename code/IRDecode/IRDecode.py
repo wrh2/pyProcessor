@@ -15,16 +15,14 @@ def IRDecode(Ins, J, BEQ, BZ, BP, BN, notHalt, NOP, op, Addr0, Addr1, Addr2, clk
 	internal_addr1 = Signal(modbv(0)[8:])
 	internal_addr2 = Signal(modbv(0)[8:])
 
-	#@always(clk.posedge)
-	@always_comb
+	@always(clk.posedge)
 	def latch_instruction():
 		internal_op.next = Ins[32:24]
 		internal_addr0.next = Ins[24:16]
 		internal_addr1.next = Ins[16:8]
 		internal_addr2.next = Ins[8:0]
 
-	#@always(clk.posedge)
-	@always_comb
+	@always(clk.posedge)
 	def pass_on():
 
 		# outputs
