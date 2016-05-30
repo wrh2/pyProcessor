@@ -11,10 +11,9 @@ from gtv import *
 
 def insert_program(fname='program.hex'):
 	""" creates content for EEPROM """
-	generate_hex(fname)
+	generate_instructions(fname)
 	with open(fname) as f:
-		content = [x.strip('\n') for x in f.readlines()]
-	content = [x.strip('L') for x in content]
+		content = [modbv(int(x, 16))[32:] for x in f.readlines()]
 	return content
 
 content = insert_program()
@@ -30,7 +29,7 @@ def EEPROM(dout, addr, clk, CONTENT=content, width=32):
 	:param output dout: data output for given address
 	"""
 	
-	mem = [Signal(modbv(int(x, 16))[width:]) for x in CONTENT]
+	mem = [Signal(x) for x in CONTENT]
 
 	# sensitive to positive edge of clock
     	@always(clk.posedge)
