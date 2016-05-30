@@ -25,7 +25,7 @@ memory_image = initialize_memory()
 
 def RAM(dout0, dout1, dout2, din, we, addr0, addr1, addr2, clk, IMAGE=memory_image):
 
-	mem = [Signal(x) for x in CONTENT]
+	mem = [Signal(x) for x in IMAGE]
 	[mem.append(Signal(modbv(0)[16:])) for i in range((2**16)-len(mem))]
 
 	@always(clk.posedge)
