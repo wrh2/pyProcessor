@@ -52,15 +52,14 @@ def generate_memory_image(fname='memory_image.hex'):
 		     modbv(randrange(2**64))[64:],
 		     modbv(randrange(2**64))[64:],
 		     modbv(randrange(2**64))[64:],
+		     modbv(randrange(2**64))[64:],
 		     modbv(randrange(2**64))[64:]]
 	
 	key = modbv(0x7802c45144634a43fa10a15c405a4a42)[128:]
 	subkeys = create_subkeys(key)
-
 	f = open(fname, 'w')
-	for i in range(len(subkeys)):
-		if i+1 < len(subkeys):
-			f.write(hex(subkeys[i]).strip('L') + (hex(subkeys[i+1]).strip('0x')).strip('L') + '\n')
+	for i in range(0, len(subkeys), 2):
+		f.write(hex(subkeys[i]).strip('L') + (hex(subkeys[i+1]).strip('0x')).strip('L') + '\n')
 	for x in plaintext:
 		f.write((hex(x[64:32])).strip('L')+'\n')
 		f.write((hex(x[32:])).strip('L')+'\n')
