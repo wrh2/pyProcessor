@@ -454,8 +454,10 @@ In particular, the ALU has to perform the multiplication modulo $2^{16}$ + 1
 as specified by the ISA. With a circuit like a ripple carry adder/subtractor,
 performing this operation would take a really long time thereby significantly
 reducing throughput. Instead of something archaic like the ripple carry adder,
-a bit-serial implementation$^{[5]}$ was used to significantly reduce the clock cycles
-needed for this. This choice also allows the ALU to handle other operations quickly.
+a bit-serial implementation$^{[4]}$ was used to significantly reduce the clock cycles
+needed for this. This choice also allows the ALU to handle other operations quickly as well.
+It takes 35 clock cycles for a multiplication modulo operation and 1 for all other
+instructions specified by the ISA.
 
 ##### Signals
 
