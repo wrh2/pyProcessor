@@ -16,88 +16,14 @@ general, not just the IDEA algorithm.
 Cyptographic block cipher algorithms
 ------------------------------------
 
-A block cipher is a deterministic algorithm operating on fixed-length
+"A block cipher is a deterministic algorithm operating on fixed-length
 groups of bits, called blocks, with an unvarying transformation that is
-specified by a symmetric key$^{[1]}$. Some example block ciphers are
+specified by a symmetric key"$^{[1]}$. Some example block ciphers are
 Data Encryption Standard, Advanced Encryption Standard, RC5, and
 Blowfish. Many block ciphers, including the ones just named, are ARX
-algorithms$^{[2]}$, which means their operations only involve modular
+algorithms$^{[1]}$, which means their operations only involve modular
 addition, bit rotation, and exclusive-or. Other simple logic operations
 and bit manipulations may also be involved.
-
-### International Data Encryption Algorithm
-
-The International Data Encryption Algorithm (IDEA) is a symmetric-key block
-cipher that operates on 64-bit plaintext blocks. The encryption key is 128-bits
-long, and the same algorithm is used for both encryption and decryption. IDEA
-uses Exclusive-OR ($\oplus$), addition modulo $2^{16}$ ($\boxplus$), and
-multiplcation modulo $2^{16} + 1$ ($\odot$) operations during its "rounds" for
-encryption and decryption. All operations are performed on 16-bit sub-blocks
-with a 16-bit subkey.
-
-#### Key scheduling
-
-IDEA uses 52 subkeys: six for each of the eight rounds and four more
-for the output transformation. In order to do this, the original key is broken
-up into six subkeys then rotated left by 25 bits. This is done until all 52
-subkeys are created.
-
-#### Algorithm for Encryption
-
-The encryption and decryption algorithm is composed of 8 "rounds" that take 14
-identical steps followed by a final output transformation that is referred to as
-a "half-round". The operations are performed with a 64-bit plaintext block and a
-128-bit key. The plaintext block is separated into four 16-bit sub-blocks: $X_1,
-X_2, X_3, X_4$. The key is eventually broken down into 52 sub-keys. However, it
-is first split up into eight 16-bit sub-keys: $K_1,....,K_8$. The first six
-($K_1,..,K_6$) are used in the first round and the last two ($K_7, K_8$) are the
-first two used in the second round. The key is then rotated 25 bits to the left
-and split up into eight more 16-bit sub-keys: $K_9,...,K_{16}$. The first four
-($K_9,..,K_{12}$) are used in round two after $K_7, K_8$; the last four are used
-in round 3. The key is rotated to the left again 25-bits to obtain the next
-eight subkeys, and so on until the end of the algorithm.$^{[3]}$
-
-The steps for each round are listed below. Exclusive-OR = $\oplus$, Addition
-modulo $2^{16}$ = $\boxplus$, and Multiplcation modulo $2^{16} + 1$ = $\odot$.
-
- -----------------------------------------------------------
- Step  Operation                Step  Operation              
- ---  -----------------------   ----  ---------------------- 
- 1.   $X_1$ $\odot$ $K_1$       8.    Step6 $\boxplus$ Step7 
-
- 2.   $X_2$ $\boxplus$ $K_2$    9.    Step8 $\odot$ $K_6$    
-
- 3.   $X_3$ $\boxplus$ $K_3$    10.   Step7 $\boxplus$ Step9 
-
- 4.   $X_4$ $\odot$ $K_4$       11.   Step1 $\oplus$ Step9   
-
- 5.   Step1 $\oplus$ Step3      12.   Step3 $\oplus$ Step9   
-
- 6.   Step2 $\oplus$ Step4      13.   Step2 $\oplus$ Step10  
-
- 7.   Step5 $\odot$ $K_5$       14.   Step4 $\oplus$ Step10 
- -----------------------------------------------------------
-
- Table: IDEA algorithm steps and their associated operation 
-
-The output of the round is the four sub-blocks: $O_1$, $O_2$, $O_3$, $O_4$ that
-are the results of steps 11, 12, 13, and 14. These are the input to the next
-round. This happens eight times and on the eight round the inner blocks are
-swapped then followed by a final output transformation.
-
-The final output transformation consists of the four steps in the table below.
-
- ---------------------------------------------------------
- Step  Operation              Step  Operation              
- ---  ----------------------- ----  ---------------------- 
- 1.   $X_1$ $\odot$ $K_1$     3.    $X_3$ $\boxplus$ $K_3$ 
-
- 2.   $X_2$ $\boxplus$ $K_2$  4.    $X_4$ $\odot$ $K_4$   
- ---------------------------------------------------------
-
- Table: The "half-round" transformation to finish IDEA encryption 
-
-These four steps are then combined to produce the 64-bit ciphertext.
 
 Application-Specific Processor
 --------------
@@ -106,7 +32,7 @@ This section explains in detail the application-specific processor that was desi
 
 ## Instruction Set Architecture (ISA)
 
-The Instruction Set Architecture is the portion of the computer architecture that is visible to the programmer$^{[4]}$.
+The Instruction Set Architecture is the portion of the computer architecture that is visible to the programmer$^{[2]}$.
 This section discusses the analysis that was involved in choosing an ISA, and provides specification for the ISA that was chosen.
 
 ### Analysis
@@ -322,11 +248,30 @@ The mircoarchitecture of a processor refers to the way hardware is implemented f
 This section discusses what hardware was designed to implement the memory-memory architecture
 described in the previous sections.
 
+### Design considerations
+
+Since the architecture is memory-memory and minimizing latency
+is a goal of the project, the latency of the memory employed
+was of utmost importance. The details of these
+modules are discussed in the following sections but
+their latency clearly dictates the clock period
+to be used for the implementation.
+The ALU is the second most important part of the architecture.
+The reason for this is that the ALU has to finish
+operating on the operands before anything can be
+done with them such as writing back to memory or 
+determining the outcome of a branch.
+With regard to encryption, in algorithms like IDEA,
+the latency of the ALU is especially prominent because
+of sophisticated operations like multiplication modulo $2^{16}$ + 1.
+These considerations played a major role in the
+development of the memory and ALU.
+
 ### Overview
 
 ![Application-Specific Processor Microarchitecture](./ece486project_diagram.png){ width=75% height=75% }
 
-The microarchitecture is composed of the following components:
+The components chosen for the microarchitecture were:
 
 * Program Counter
 * Instruction Memory
@@ -334,9 +279,14 @@ The microarchitecture is composed of the following components:
 * Memory module
 * Arithmetic Logic Unit (ALU)
 
-These components make up a 5-stage unpipelined multi-cycle processor.
+These components were used to construct a 5-stage unpipelined multi-cycle processor.
 This means that it takes multiple cycles for an instruction to complete.
 Figure 1 depicts the organization of these components.
+The reason for this design choice had to do with the unrealistic
+constraints that a single-cycle processor would put on the memory and ALU.
+The architecture was not pipelined to eliminate the hardware overhead
+associated with hazards. Thus, these components compose a minimal solution for the ISA
+while still being able to handle the task of encryption.
 
 #### Stages
 
@@ -427,6 +377,7 @@ The instruction memory contains the instructions to be executed.
 It has one input which is a 16-bit address from the program counter.
 Each address contains the instruction to be passed to the IR/Decoder.
 The output is a 32-bit instruction that goes to the input of the IR/Decoder.
+It was assumed
 
 #### Instruction Register/Decoder (IR/Decode)
 
@@ -465,17 +416,46 @@ that are passed on to the memory module.
     * Op - 8 bit op code
         * Connected to ALU
 
+#### Memory module
+
+The memory module is a small quick memory that has 2 read only ports and 1 bi-directional
+port for reading and writing data. The bi-directional port is Port 0.
+This port is utilized by Operand0 which is the address in memory where the value is stored
+or the value in memory where the PC will jump/branch to.
+Port 1 and Port 2 are the ports for operands A and B respectively.
+These ports are read only. This design choice was made to help
+avoid memory bottlenecks and data hazards.
+
+The memory module was implemented with assumption of a modified PC100 SDRAM$^[3]$.
+Assuming a clock cyle period of 20ns,
+it takes 1 clock cycle to read or write to the memory module.
+
+##### Signals
+
+* Inputs
+    * Addr0, Addr1, Addr2 - Addresses to access
+        * Connected to outputs of IR/Decoder
+    * Din0 - Data input for Port 0
+        * Connected to output for ALU
+    * WE - Write enable for Port 0 (not pictured in diagram)
+        * Connected to ready signal on ALU
+* Outputs
+    * Dout1, Dout2 - Output value at addresses Addr1, Addr2
+        * Connected to A, B inputs of ALU
+    * Dout0 - Output value at address Addr0
+        * Connected to Addr input of PC, used for branching/jumping
+
 #### Arithmetic Logic Unit (ALU)
 
 The ALU is a combinational circuits that performs arithemetic operations.
-This component is the most crucial component of any processor.
+This component is a crucial component of any processor.
 Special considerations were given to the ALU for this specific application.
 In particular, the ALU has to perform the multiplication modulo $2^{16}$ + 1
 as specified by the ISA. With a circuit like a ripple carry adder/subtractor,
 performing this operation would take a really long time thereby significantly
 reducing throughput. Instead of something archaic like the ripple carry adder,
 a bit-serial implementation$^{[5]}$ was used to significantly reduce the clock cycles
-needed for this.
+needed for this. This choice also allows the ALU to handle other operations quickly.
 
 ##### Signals
 
@@ -494,61 +474,140 @@ needed for this.
     * Ready - Control signal connected to AND gate with !HALT
               from IR/Decoder
 
+### Instruction timing
+
+  ---------------------------------------
+  OP    Clock cycles  OP     Clock cycles
+  ----- ------------  ------ ------------
+  ADD   6             STORE  6  
+
+  SUB   6             MUL    6
+
+  BEQ   6             BZ     6
+
+  BP    6             BN     6
+
+  JR    6             NOP    6
+
+  HALT  6             MODM   40
+
+  OR    6             AND    6
+
+  XOR   6             LOAD   6
+  ---------------------------------------
+
+  Table: Instruction timing
+
+**Average clock cycles per instruction = 8.13**
+
+##### Throughput = 16 bits / (8.13*20ns) = 98.4 MB/s
+
 ### Design optimizations
+
+#### Avoiding hazards
 
 A Harvard architecture was chosen for instruction memory and data.
 This means that the instruction memory and data memory are separated.
 The program counter has its own internal also has its own internal ALU for addition.
 This means that the program counter doesn't need the ALU that performs operations on the operands to increment.
 These choices were made to avoid structural hazards.
-Small quick memories were used for the instruction memory and memory module.
+
+#### Dealing with the memory bottleneck
+
+The memory module has three ports with two being read-only.
+This means only one port can be written to.
+This choice was made to avoid a memory bottleneck.
+
+#### Lowering latency
+
+Since the architecture is memory-memory, small quick
+memories are used for the implementation of the instruction memory and memory module.
+The clock cycle time for accessing both the instruction memory
+and the memory module was 1 assuming a clock period of 20ns.
 This was done to minimize memory latency.
+
+#### Maximizing throughput
+
 The ALU uses a bit-serial implementation to quickly process sophisticated
-operations like multiplication modulo $2^{16}$ + 1.
+operations like multiplication modulo $2^{16}$ + 1. A bit-serial implementation
+can handle multiplication modulo $2^{16}$ + 1 in 35 clock cycles and all other
+operations specified by the ISA in 1 clock cycle.
 
-### Instruction timing
+## International Data Encryption Algorithm
 
-  -----------------------
-  OP      Clock cycles
-  ------- ---------------
-  ADD     6
+The International Data Encryption Algorithm (IDEA) is a symmetric-key block
+cipher that operates on 64-bit plaintext blocks. The encryption key is 128-bits
+long, and the same algorithm is used for both encryption and decryption. IDEA
+uses Exclusive-OR ($\oplus$), addition modulo $2^{16}$ ($\boxplus$), and
+multiplcation modulo $2^{16} + 1$ ($\odot$) operations during its "rounds" for
+encryption and decryption. All operations are performed on 16-bit sub-blocks
+with a 16-bit subkey.
 
-  SUB     6
+### Key scheduling
 
-  MUL     6
+IDEA uses 52 subkeys: six for each of the eight rounds and four more
+for the output transformation. In order to do this, the original key is broken
+up into six subkeys then rotated left by 25 bits. This is done until all 52
+subkeys are created.
 
-  OR      6
+### Algorithm for Encryption
 
-  AND     6
+The encryption and decryption algorithm is composed of 8 "rounds" that take 14
+identical steps followed by a final output transformation that is referred to as
+a "half-round". The operations are performed with a 64-bit plaintext block and a
+128-bit key. The plaintext block is separated into four 16-bit sub-blocks: $X_1,
+X_2, X_3, X_4$. The key is eventually broken down into 52 sub-keys. However, it
+is first split up into eight 16-bit sub-keys: $K_1,....,K_8$. The first six
+($K_1,..,K_6$) are used in the first round and the last two ($K_7, K_8$) are the
+first two used in the second round. The key is then rotated 25 bits to the left
+and split up into eight more 16-bit sub-keys: $K_9,...,K_{16}$. The first four
+($K_9,..,K_{12}$) are used in round two after $K_7, K_8$; the last four are used
+in round 3. The key is rotated to the left again 25-bits to obtain the next
+eight subkeys, and so on until the end of the algorithm.$^{[5]}$
 
-  XOR     6
+The steps for each round are listed below. Exclusive-OR = $\oplus$, Addition
+modulo $2^{16}$ = $\boxplus$, and Multiplcation modulo $2^{16} + 1$ = $\odot$.
 
-  LOAD    6
+ -----------------------------------------------------------
+ Step  Operation                Step  Operation              
+ ---  -----------------------   ----  ---------------------- 
+ 1.   $X_1$ $\odot$ $K_1$       8.    Step6 $\boxplus$ Step7 
 
-  STORE   6
+ 2.   $X_2$ $\boxplus$ $K_2$    9.    Step8 $\odot$ $K_6$    
 
-  BZ      6
+ 3.   $X_3$ $\boxplus$ $K_3$    10.   Step7 $\boxplus$ Step9 
 
-  BEQ     6
+ 4.   $X_4$ $\odot$ $K_4$       11.   Step1 $\oplus$ Step9   
 
-  BP      6
+ 5.   Step1 $\oplus$ Step3      12.   Step3 $\oplus$ Step9   
 
-  BN      6
+ 6.   Step2 $\oplus$ Step4      13.   Step2 $\oplus$ Step10  
 
-  JR      6
+ 7.   Step5 $\odot$ $K_5$       14.   Step4 $\oplus$ Step10 
+ -----------------------------------------------------------
 
-  NOP     6
+ Table: IDEA algorithm steps and their associated operation 
 
-  HALT    6
+The output of the round is the four sub-blocks: $O_1$, $O_2$, $O_3$, $O_4$ that
+are the results of steps 11, 12, 13, and 14. These are the input to the next
+round. This happens eight times and on the eight round the inner blocks are
+swapped then followed by a final output transformation.
 
-  MODM    40
-  -----------------------
+The final output transformation consists of the four steps in the table below.
 
-**Average clock cycles per instruction = 8.13**
+ ---------------------------------------------------------
+ Step  Operation              Step  Operation              
+ ---  ----------------------- ----  ---------------------- 
+ 1.   $X_1$ $\odot$ $K_1$     3.    $X_3$ $\boxplus$ $K_3$ 
 
-##### Throughput = 16 bits / (8.13*20ns) = 98.4 MB/s
+ 2.   $X_2$ $\boxplus$ $K_2$  4.    $X_4$ $\odot$ $K_4$   
+ ---------------------------------------------------------
 
-### Simulation
+ Table: The "half-round" transformation to finish IDEA encryption 
+
+These four steps are then combined to produce the 64-bit ciphertext.
+
+## Simulation
 
 The architecture was simulated using python.
 The subkeys are pre-computed with the procedure described in the
@@ -573,9 +632,8 @@ There is a README included with this report that explains how to run the simulat
 References
 ==========
 
-1.  Wikipedia Article on Block Ciphers:
-    https://en.wikipedia.org/wiki/Block\_cipher
-2.  https://en.wikipedia.org/wiki/Block\_cipher\#Operations
-3.  Bruce Schneier, Applied Cryptography: Second Edition
-4.  Hennessey and Patterson, Computer Architecture: A Quantitative Approach (5th Edition)
-5.  Leong, Monk-Ping, et al. "A bit-serial implementation of the international data encryption algorithm IDEA." Field-Programmable Custom Computing Machines, 2000 IEEE Symposium on. IEEE, 2000.
+1.  "Block Cipher" Wikipedia: The Free Encyclopedia. Wikimedia Foundation, Inc. 4 May 2016. Web. 2 June 2016.
+2.  Hennessy, John L., and David A. Patterson. Computer architecture: a quantitative approach (5th Edition). Elsevier, 2012.
+3.  "CAS Latnecy: Memory Timing Examples" Wikipedia: The Free Encyclopedia. Wikimedia Foundation, Inc. 2 June 2016. Wed. 2 June 2016.
+4.  Leong, Monk-Ping, et al. "A bit-serial implementation of the international data encryption algorithm IDEA." Field-Programmable Custom Computing Machines, 2000 IEEE Symposium on. IEEE, 2000.
+5.  Schneier, Bruce. Applied cryptography: protocols, algorithms, and source code in C. john wiley & sons, 1996.
