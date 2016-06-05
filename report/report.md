@@ -77,57 +77,37 @@ Also, the mnemonics used are generic like those used in Computer Architecture,
 5th edition by Hennessy and Patterson Appendix A Section 2.
 
 <!-- -->
-
-    Stack
-    -----
-        Push A                    #&
-        Push B                    #&
-        Add                       #&
-        Pop  Mem[0]                %
-        Push Mem[0]               #&
-        Push C                    #&
-        Rotate                    #&
-        Pop  Mem[1]                %  
+    Stack                                            Accumulator (Assume accumulator initialized to 0)
+    ---------                                        -------------
+        Push A                    #&                 Add    A                  #&
+        Push B                    #&                 Add    B                  #&
+        Add                       #&                 Store  Mem[0]              %
+        Pop  Mem[0]                %                 Rotate C                  #&
+        Push Mem[0]               #&                 Store  Mem[1]              %
+        Push C                    #&                 XOR    D                  #&
+        Rotate                    #&                 Store  Result              %
+        Pop  Mem[1]                %
         Push Mem[1]              *#&
         Push D                    #&
         XOR                       #&
         Pop  Result                %
 
-    Accumulator
-    -----------
-        Add    A                  #& ;Assume accumulator initialized to 0
-        Add    B                  #&
-        Store  Mem[0]              %
-        Rotate C                  #&
-        Store  Mem[1]              %         
-        XOR    D                  #&
-        Store  Result              %         
-
-
-    Load-Store
-    ----------
-        Load   R1, A              #&
-        Load   R2, B              #&
-        Add    R3, R1, R2         #&
+    Load-Store                                       Memory-memory
+    ----------                                       -------------
+        Load   R1, A              #&                 Add    Mem[0], A, B       #%
+        Load   R2, B              #&                 Rotate Mem[1], C, Mem[0]  #%
+        Add    R3, R1, R2         #&                 XOR    Result, D, Mem[1]  #%
         Load   R4, C              #&
         Rotate R5, R3, R4         #&
         Load   R6, D              #&
         XOR    R7, R5, R6         #&
         Store  Result, R7          %
 
-    Memory-memory
-    -------------
-        Add    Mem[0], A, B       #%
-        Rotate Mem[1], C, Mem[0]  #%
-        XOR    Result, D, Mem[1]  #%
-
     * value is loaded from memory after having been loaded once
     # the result of one instruction is passed to another instruction as an operand
     & storage within the processor
     % storage in memory
-
 <!-- -->
-
   ---------------------------------------------------------------
   Architecture   Instruction Bytes     Bytes from/to  Code + Data
                  fetched               mem            
@@ -292,7 +272,7 @@ while still being able to handle the task of encryption.
 
 ##### Instruction Fetch
 
-During this stage, the PC is incremented with its own internal ALU. This takes one cycle to complete.
+During this stage, the PC is incremented with its own internal adder. This takes one cycle to complete.
 Once complete the PC outputs a 16-bit integer that is address of the next instruction to grab from
 the instruction memory. The memory location specified by the output of the program counter is then 
 accessed. The output of the instruction memory is a 32-bit instruction that is connected to the input
@@ -323,7 +303,7 @@ This stage takes one clock cycle to complete.
 ##### Memory Access
 
 The memory module uses the addresses supplied by the decode stage to access those
-locations in memory and then pass them on to the ALU. This stage takes one cycle to complete.
+locations in memory and then pass them on to the ALU. This stage takes two cycles to complete.
 
 ##### Execute
 
@@ -356,6 +336,9 @@ and it becomes the next instruction that is fetched from the instruction memory.
 The load signal is controlled by the logical OR'ing of the jump signal (J) and
 the AND'ing of the branch bits (Branch) with the flag bits (Flags) from the ALU.
 The address bus (Addr) is driven by one of the address outputs of the IR/Decoder (Addr0).
+The PC has its own internal adder implemented witha ripple carry adder for incrementing
+and a register to hold its current value. The propagation delay of the adder is assumed
+to be less than half of the memory latency so that it only takes 1 clock cycle to increment.
 
 ##### Signals
 
@@ -374,12 +357,28 @@ The address bus (Addr) is driven by one of the address outputs of the IR/Decoder
 #### Instruction Memory
 
 The instruction memory contains the instructions to be executed.
-It has one input which is a 16-bit address from the program counter.
-Each address contains the instruction to be passed to the IR/Decoder.
-The output is a 32-bit instruction that goes to the input of the IR/Decoder.
-It was assumed
+It was implemented with assumption of a modified PC100 SDRAM
+with the following timing parameters$^{[3]}$$^{[4]}$.
 
-#### Instruction Register/Decoder (IR/Decode)
+Data Rate | Bit time | Command Rate | Cycle Time 
+--------- | -------- | ------------ | ---------- 
+100 MT/s  | 10 ns    | 100 MHz      | 20 ns      
+
+Therefore, a clock frequency of 100 MHz was used for the processor.
+This memory is read-only and it takes 2 clock cycles to read from.
+
+##### Signals
+
+* Inputs
+    * Addr - address of memory to access
+        * Connected to output of PC
+        * 16 bits wide
+* Outputs
+   * Dout - Data of memory address
+        * Connected to input of IR/Decoder
+        * 32 bits wide
+
+#### Instruction Register/Decoder (IR/Decoder)
 
 The instruction register/decoder seperates the instruction into the
 pieces specified by the ISA and passes these pieces on to the memory
@@ -426,24 +425,34 @@ Port 1 and Port 2 are the ports for operands A and B respectively.
 These ports are read only. This design choice was made to help
 avoid memory bottlenecks and data hazards.
 
-The memory module was implemented with assumption of a modified PC100 SDRAM$^[3]$.
-Assuming a clock cyle period of 20ns,
-it takes 1 clock cycle to read or write to the memory module.
+The memory module was implemented with assumption of a modified PC100 SDRAM
+with the following timing parameters$^{[3]}$$^{[4]}$.
+
+Data Rate | Bit time | Command Rate | Cycle Time 
+--------- | -------- | ------------ | ---------- 
+100 MT/s  | 10 ns    | 100 MHz      | 20 ns      
+
+Therefore, a clock frequency of 100 MHz was used for the processor.
+It takes 2 clock cycles to read or write to the memory module.
 
 ##### Signals
 
 * Inputs
     * Addr0, Addr1, Addr2 - Addresses to access
         * Connected to outputs of IR/Decoder
+        * 8 bits wide
     * Din0 - Data input for Port 0
         * Connected to output for ALU
+        * 16 bits wide
     * WE - Write enable for Port 0 (not pictured in diagram)
         * Connected to ready signal on ALU
 * Outputs
     * Dout1, Dout2 - Output value at addresses Addr1, Addr2
         * Connected to A, B inputs of ALU
+        * 16 bits wide
     * Dout0 - Output value at address Addr0
         * Connected to Addr input of PC, used for branching/jumping
+        * 16 bits wide
 
 #### Arithmetic Logic Unit (ALU)
 
@@ -454,7 +463,7 @@ In particular, the ALU has to perform the multiplication modulo $2^{16}$ + 1
 as specified by the ISA. With a circuit like a ripple carry adder/subtractor,
 performing this operation would take a really long time thereby significantly
 reducing throughput. Instead of something archaic like the ripple carry adder,
-a bit-serial implementation$^{[4]}$ was used to significantly reduce the clock cycles
+a bit-serial implementation$^{[5]}$ was used to significantly reduce the clock cycles
 needed for this. This choice also allows the ALU to handle other operations quickly as well.
 It takes 35 clock cycles for a multiplication modulo operation and 1 for all other
 instructions specified by the ISA.
@@ -478,31 +487,23 @@ instructions specified by the ISA.
 
 ### Instruction timing
 
-  ---------------------------------------
-  OP    Clock cycles  OP     Clock cycles
-  ----- ------------  ------ ------------
-  ADD   6             STORE  6  
+  ------------------------------------------------------------------------------------------------------
+  OP    Clock cycles  OP     Clock cycles  OP     Clock cycles  OP     Clock cycles  OP     Clock cycles
+  ----- ------------  ------ ------------  -----  ------------  -----  ------------  -----  ------------
+  ADD   9             STORE  9             BP     9             NOP    9             OR     9
 
-  SUB   6             MUL    6
+  SUB   9             MUL    9             BN     9             HALT   9             AND    9
 
-  BEQ   6             BZ     6
+  BEQ   9             BZ     9             JR     9             MODM   43            XOR    9
 
-  BP    6             BN     6
-
-  JR    6             NOP    6
-
-  HALT  6             MODM   40
-
-  OR    6             AND    6
-
-  XOR   6             LOAD   6
-  ---------------------------------------
+  LOAD  9
+  ------------------------------------------------------------------------------------------------------
 
   Table: Instruction timing
 
-**Average clock cycles per instruction = 8.13**
+**Average clock cycles per instruction = 11.13**
 
-##### Throughput = 16 bits / (8.13*20ns) = 98.4 MB/s
+##### Throughput = 16 bits / (11.13*10ns) = 143.8 MBits/s
 
 ### Design optimizations
 
@@ -523,9 +524,7 @@ This choice was made to avoid a memory bottleneck.
 #### Lowering latency
 
 Since the architecture is memory-memory, small quick
-memories are used for the implementation of the instruction memory and memory module.
-The clock cycle time for accessing both the instruction memory
-and the memory module was 1 assuming a clock period of 20ns.
+memories were used for the implementation of the instruction memory and memory module.
 This was done to minimize memory latency.
 
 #### Maximizing throughput
@@ -565,28 +564,27 @@ first two used in the second round. The key is then rotated 25 bits to the left
 and split up into eight more 16-bit sub-keys: $K_9,...,K_{16}$. The first four
 ($K_9,..,K_{12}$) are used in round two after $K_7, K_8$; the last four are used
 in round 3. The key is rotated to the left again 25-bits to obtain the next
-eight subkeys, and so on until the end of the algorithm.$^{[5]}$
+eight subkeys, and so on until the end of the algorithm.$^{[6]}$
 
-The steps for each round are listed below. Exclusive-OR = $\oplus$, Addition
-modulo $2^{16}$ = $\boxplus$, and Multiplcation modulo $2^{16} + 1$ = $\odot$.
+Table 7 lists the steps for each round and the equivalent assembly instruction for the architecture developed to show how it can be used to perform IDEA encryption.
 
- -----------------------------------------------------------
- Step  Operation                Step  Operation              
- ---  -----------------------   ----  ---------------------- 
- 1.   $X_1$ $\odot$ $K_1$       8.    Step6 $\boxplus$ Step7 
+ ---------------------------------------------------------------------------------------------------------------------------------------------
+ Step  Operation               Instruction                               Step  Operation              Instruction   
+ ---- -----------------------  ----------------------------------------  ----  ---------------------- ----------------------------------------
+ 1.   $X_1$ $\odot$ $K_1$      MODM Mem[$S_1$], Mem[$X_1$], Mem[$K_1$]   8.    Step6 $\boxplus$ Step7 ADD Mem[$S_8$], Mem[$S_6$], Mem[$S_7$] 
 
- 2.   $X_2$ $\boxplus$ $K_2$    9.    Step8 $\odot$ $K_6$    
+ 2.   $X_2$ $\boxplus$ $K_2$   ADD Mem[$S_2$], Mem[$X_2$], Mem[$K_2$]    9.    Step8 $\odot$ $K_6$    MODM Mem[$S_9$], Mem[$S_8$], Mem[$K_6$]
 
- 3.   $X_3$ $\boxplus$ $K_3$    10.   Step7 $\boxplus$ Step9 
+ 3.   $X_3$ $\boxplus$ $K_3$   ADD Mem[$S_3$], Mem[$X_3$], Mem[$K_3$]    10.   Step7 $\boxplus$ Step9 ADD Mem[$S_{10}$], Mem[$S_7$], Mem[$S_9$]
 
- 4.   $X_4$ $\odot$ $K_4$       11.   Step1 $\oplus$ Step9   
+ 4.   $X_4$ $\odot$ $K_4$      MODM Mem[$S_4$], Mem[$X_4$], Mem[$K_4$]   11.   Step1 $\oplus$ Step9   XOR Mem[$S_{11}$], Mem[$S_1$], Mem[$S_9$]
 
- 5.   Step1 $\oplus$ Step3      12.   Step3 $\oplus$ Step9   
+ 5.   Step1 $\oplus$ Step3     XOR Mem[$S_5$], Mem[$S_1$], Mem[$S_3$]    12.   Step3 $\oplus$ Step9   XOR Mem[$S_{12}$], Mem[$S_3$], Mem[$S_9$]
 
- 6.   Step2 $\oplus$ Step4      13.   Step2 $\oplus$ Step10  
+ 6.   Step2 $\oplus$ Step4     XOR Mem[$S_6$], Mem[$S_2$], Mem[$S_4$]    13.   Step2 $\oplus$ Step10  XOR Mem[$S_{13}$], Mem[$S_2$], Mem[$S_{10}$]
 
- 7.   Step5 $\odot$ $K_5$       14.   Step4 $\oplus$ Step10 
- -----------------------------------------------------------
+ 7.   Step5 $\odot$ $K_5$      MODM Mem[$S_7$], Mem[$S_5$], Mem[$K_5$]   14.   Step4 $\oplus$ Step10  XOR Mem[$S_{14}$], Mem[$S_4$], Mem[$S_{10}$]
+ ---------------------------------------------------------------------------------------------------------------------------------------------
 
  Table: IDEA algorithm steps and their associated operation 
 
@@ -597,23 +595,22 @@ swapped then followed by a final output transformation.
 
 The final output transformation consists of the four steps in the table below.
 
- ---------------------------------------------------------
- Step  Operation              Step  Operation              
- ---  ----------------------- ----  ---------------------- 
- 1.   $X_1$ $\odot$ $K_1$     3.    $X_3$ $\boxplus$ $K_3$ 
+ --------------------------------------------------------------------------------------------------------------------------------------------
+ Step  Operation               Instruction                              Step  Operation               Instruction
+ ---  -----------------------  ---------------------------------------  ----  ----------------------  ---------------------------------------
+ 1.   $X_1$ $\odot$ $K_1$      MODM Mem[$S_1$], Mem[$X_1$], Mem[$K_1$]  3.    $X_3$ $\boxplus$ $K_3$  ADD  Mem[$S_3$], Mem[$X_3$], Mem[$K_3$]
 
- 2.   $X_2$ $\boxplus$ $K_2$  4.    $X_4$ $\odot$ $K_4$   
- ---------------------------------------------------------
+ 2.   $X_2$ $\boxplus$ $K_2$   ADD  Mem[$S_2$], Mem[$X_2$], Mem[$K_2$]  4.    $X_4$ $\odot$ $K_4$     MODM Mem[$S_4$], Mem[$X_4$], Mem[$K_4$]
+ --------------------------------------------------------------------------------------------------------------------------------------------
 
  Table: The "half-round" transformation to finish IDEA encryption 
 
 These four steps are then combined to produce the 64-bit ciphertext.
 
-## Simulation
+### Simulation
 
 The architecture was simulated using python.
-The subkeys are pre-computed with the procedure described in the
-International Data Encryption Algorithm section of this report.
+The subkeys are pre-computed with the procedure described in the previous section.
 Memory image is initialized with the subkeys followed by the
 1024 bits of plaintext. The key used was 0x7802c45144634a43fa10a15c405a4a42.
 The 1024 bits of plaintext were varied for testing purposes.
@@ -624,11 +621,10 @@ This block of plaintext was 0x20822C1109510840.
 The code for generating the memory image is in gtv.py and the algorithm for
 generating the subkeys is in IDEA.py. See generate_memory_image in gtv.py
 and create_subkeys in IDEA.py 
-The implementation of the IDEA algorithm in hex is in program.hex.
 
-The simulation showed that the program takes 32704 clock cycles to execute.
-With a clock period of 20ns, that is 654 microseconds.
-
+The implementation of the IDEA algorithm for this architecture is in program.hex.
+The simulation showed that the program takes 40480 clock cycles to execute.
+With a clock period of 10ns, that is 404.8 microseconds.
 There is a README included with this report that explains how to run the simulation.
 
 References
@@ -637,5 +633,6 @@ References
 1.  "Block Cipher" Wikipedia: The Free Encyclopedia. Wikimedia Foundation, Inc. 4 May 2016. Web. 2 June 2016.
 2.  Hennessy, John L., and David A. Patterson. Computer architecture: a quantitative approach (5th Edition). Elsevier, 2012.
 3.  "CAS Latnecy: Memory Timing Examples" Wikipedia: The Free Encyclopedia. Wikimedia Foundation, Inc. 2 June 2016. Wed. 2 June 2016.
-4.  Leong, Monk-Ping, et al. "A bit-serial implementation of the international data encryption algorithm IDEA." Field-Programmable Custom Computing Machines, 2000 IEEE Symposium on. IEEE, 2000.
-5.  Schneier, Bruce. Applied cryptography: protocols, algorithms, and source code in C. john wiley & sons, 1996.
+4.  "PC100" Wikipedia: The Free Encyclopedia. Wikimedia Foundation, Inc. 10 March 2016. Wed. 4 June 2016.
+5.  Leong, Monk-Ping, et al. "A bit-serial implementation of the international data encryption algorithm IDEA." Field-Programmable Custom Computing Machines, 2000 IEEE Symposium on. IEEE, 2000.
+6.  Schneier, Bruce. Applied cryptography: protocols, algorithms, and source code in C. john wiley & sons, 1996.
