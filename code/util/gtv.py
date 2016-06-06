@@ -59,10 +59,10 @@ def generate_memory_image(fname='memory_image.hex'):
 	subkeys = create_subkeys(key)
 	f = open(fname, 'w')
 	for i in range(0, len(subkeys), 2):
-		f.write(hex(subkeys[i]).strip('L') + (hex(subkeys[i+1]).strip('0x')).strip('L') + '\n')
+		f.write((hex(subkeys[i]).strip('L')).zfill(4) + ((hex(subkeys[i+1]).strip('0x')).strip('L')).zfill(4) + '\n')
 	for x in plaintext:
-		f.write((hex(x[64:32])).strip('L')+'\n')
-		f.write((hex(x[32:])).strip('L')+'\n')
+		f.write(((hex(x[64:32])).strip('L')).zfill(8)+'\n')
+		f.write(((hex(x[32:])).strip('L')).zfill(8)+'\n')
 	f.close()
 
 def str2hex(string):
