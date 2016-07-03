@@ -1,14 +1,15 @@
 # pyProcessor
 
-An application specific processor modelled with the python MyHDL package. The application that the processor is suppose to be designed for is block cipher encryption algorithms.
+An application specific processor modelled with the python MyHDL package.
+
+Please be aware that this project is not finished and certain functionality is currently not behaving as intended.
+This project has not been abandoned however it is just something I work on in my free time and will eventually be finished.
 
 ## Contents
 
-Code - contains code base
+code - contains code base
 
-## Description
-
-The processor is a multi-cycle unpipelined processor.
+report - contains details about the project
 
 ## Dependencies
 
@@ -16,7 +17,6 @@ The processor is a multi-cycle unpipelined processor.
 * [MyHDL](http://www.myhdl.org/)
 
 ### Recommended
-
 
 * [GTKWave](http://gtkwave.sourceforge.net/)
     * For viewing [Value Change Dump](https://en.wikipedia.org/wiki/Value_change_dump) files
