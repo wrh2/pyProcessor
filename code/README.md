@@ -25,7 +25,7 @@ To run the default amount of timesteps do:
     <class 'myhdl._SuspendSimulation'>: Simulated 1000 timesteps
 
 
-You can also specify the amount of timestamps
+You can also specify the amount of timesteps
 
 
     myProcessor.simulate(5000)
