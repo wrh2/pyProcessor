@@ -198,126 +198,60 @@ class pyProcessor:
 		E, P, N,
 		width=16):
 
-		addition = Signal(modbv(0)[width:], delay=20)
-		subtraction = Signal(modbv(0)[width:], delay=20)
-		multiplication = Signal(modbv(0)[width:], delay=20)
-		normalOR = Signal(modbv(0)[width:], delay=20)
-		normalAND = Signal(modbv(0)[width:], delay=20)
-		exclusiveOR = Signal(modbv(0)[width:], delay=20)
-		LOAD = Signal(modbv(0)[width:], delay=20)
-		STORE = Signal(modbv(0)[width:], delay=20)
-		BZ = Signal(modbv(0)[width:], delay=20)
-		BEQ = Signal(modbv(0)[width:], delay=20)
-		BP = Signal(modbv(0)[width:], delay=20)
-		BN = Signal(modbv(0)[width:], delay=20)
-		JMP = Signal(modbv(0)[width:], delay=20)
-		HALT = Signal(modbv(0)[width:], delay=20)
-		NOP = Signal(modbv(0)[width:], delay=20)
-		mod_mult = Signal(modbv(0)[width:], delay=700)
-
-		@always_comb
+		@instance
 		def ALU_logic():
 			""" Logic for ALU """
-			if op == 0x0:
-				addition.next = modbv(a+b)[width:]
-			if op == 0x1:
-				subtraction.next = modbv(a-b)[width:]
-			if op == 0x2:
-				multiplication.next = modbv(a*b)[width:]
-			if op == 0x3:
-				normalOR.next = modbv(a|b)[width:]
-			if op == 0x4:
-				normalAND.next = modbv(a&b)[width:]
-			if op == 0x5:
-				exclusiveOR.next = modbv(a^b)[width:]
-			if op == 0x6:
-				LOAD.next = modbv(a)[width:]
-			if op == 0x7:
-				STORE.next = modbv(a)[width:]
-			if op == 0x8:
-				BZ.next = modbv(0x8)[width:]
-			if op == 0x9:
-				BEQ.next = modbv(0x9)[width:]
-			if op == 0xA:
-				BP.next = modbv(0xA)[width:]
-			if op == 0xB:
-				BN.next = modbv(0xB)[width:]
-			if op == 0xC:
-				JMP.next = modbv(0xC)[width:]
-			if op == 0xD:
-				HALT.next = modbv(0xD)[width:]
-			if op == 0xE:
-				NOP.next = modbv(0xE)[width:]
-			if op == 0xF:
-				mod_mult.next = modbv((a*b) % ((2**width)+1))[width:]
+			while True:
+				yield op
+				if op == 0x0:
+					yield delay(20)
+					result.next = modbv(a+b)[width:]
+				elif op == 0x1:
+					yield delay(20)
+					result.next = modbv(a-b)[width:]
+				elif op == 0x2:
+					yield delay(20)
+					result.next = modbv(a*b)[width:]
+				elif op == 0x3:
+					yield delay(20)
+					result.next = modbv(a|b)[width:]
+				elif op == 0x4:
+					yield delay(20)
+					result.next = modbv(a&b)[width:]
+				elif op == 0x5:
+					yield delay(20)
+					result.next = modbv(a^b)[width:]
+				elif op == 0x6:
+					yield delay(20)
+					result.next = modbv(a)[width:]
+				elif op == 0x7:
+					yield delay(20)
+					result.next = modbv(a)[width:]
+				elif op == 0x8:
+					yield delay(20)
+					result.next = modbv(0x8)[width:]
+				elif op == 0x9:
+					yield delay(20)
+					result.next = modbv(0x9)[width:]
+				elif op == 0xA:
+					yield delay(20)
+					result.next = modbv(0xA)[width:]
+				elif op == 0xB:
+					yield delay(20)
+					result.next = modbv(0xB)[width:]
+				elif op == 0xC:
+					yield delay(20)
+					result.next = modbv(0xC)[width:]
+				elif op == 0xD:
+					yield delay(20)
+					result.next = modbv(0xD)[width:]
+				elif op == 0xE:
+					yield delay(20)
+					result.next = modbv(0xE)[width:]
+				if op == 0xF:
+					yield delay(700)
+					result.next = modbv((a*b) % ((2**width)+1))[width:]
 
-		@always(addition)
-		def output_add():
-			result.next = addition
-
-		@always(subtraction)
-		def output_sub():
-			result.next = subtraction
-
-		@always(multiplication)
-		def output_mult():
-			result.next = multiplication
-
-		@always(multiplication)
-		def output_mult():
-			result.next = multiplication
-
-		@always(normalOR)
-		def output_normOR():
-			result.next = normalOR
-
-		@always(normalAND)
-		def output_normAND():
-			result.next = normalAND
-
-		@always(exclusiveOR)
-		def output_xOR():
-			result.next = exclusiveOR
-
-		@always(LOAD)
-		def output_LOAD():
-			result.next = LOAD
-
-		@always(STORE)
-		def output_STORE():
-			result.next = STORE
-
-		@always(BZ)
-		def output_BZ():
-			result.next = BZ
-
-		@always(BEQ)
-		def output_BEQ():
-			result.next = BEQ
-
-		@always(BP)
-		def output_BP():
-			result.next = BP
-	
-		@always(BN)
-		def output_BN():
-			result.next = BN
-
-		@always(JMP)
-		def output_JMP():
-			result.next = JMP
-
-		@always(HALT)
-		def output_HALT():
-			result.next = HALT
-
-		@always(NOP)
-		def output_NOP():
-			result.next = NOP
-
-		@always(mod_mult)
-		def output_modmult():
-			result.next = mod_mult
 
 		@always_comb
 		def checkConditions():
@@ -358,14 +292,14 @@ class pyProcessor:
 		result = Signal(modbv(0)[16:])
 
 		""" Instruction memory signals and instantiation """
-		Ins = Signal(modbv(0)[32:])
+		Ins = Signal(modbv(0x0e000000)[32:])
 		instruction_memory = self.__EEPROM(Ins, output, clk)
 
 		""" Instruction Reg/Decoder signals and instantiation """
 		J, BEQ, BZ, BP, BN, NOP = [Signal(bool(0)) for i in range(6)]
 		notHalt = Signal(bool(1))
 		Addr0, Addr1, Addr2 = [Signal(modbv(0)[8:]) for i in range(3)]
-		op_to_ALU = Signal(modbv(0)[8:], delay=20)
+		op_to_ALU = Signal(modbv(0xE)[8:], delay=20)
 
 		instruction_regdecode = self.__IRDecode(Ins, J, BEQ,
 						BZ, BP, BN,
@@ -434,7 +368,7 @@ class pyProcessor:
 				yield result
 				if op_to_ALU in self.wb_instructions:
 					we0.next = bool(1)
-					for i in range(1):
+					for i in range(3):
 						yield clk.negedge
 					we0.next = bool(0)
 
