@@ -20,7 +20,7 @@ create a new pdf. Note: this requires pandoc.
 
 ## Important notes about the report
 
-This report describes the architecture for pyProcessor which I why I am making it available.
+This report describes the architecture for pyProcessor which is why I am making it available.
 There are lots of details in here that are not necessary to understand the architecture.
 At some point I will redo this documentation to reflect only the details that are important.
 The report also makes mention of a non-hardware simulation version of pyProcessor.
