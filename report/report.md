@@ -9,7 +9,7 @@ Introduction
 The objective of this project was to design, model, simulate, and test
 an application specific-processor for cryptographic block cipher
 algorithms. The target algorithm was International Data Encryption
-Algorithm. However, the system should've been designed to achieve high
+Algorithm. However, the system was designed to achieve high
 throughput and low latency for executing block cipher algorithms in
 general, not just the IDEA algorithm.
 
@@ -52,10 +52,8 @@ The following items were examined
 
 The following assumptions are made for the code below
 
-* A, B, C, D are unsigned 16-bit integers
-    * They are initialized to some value and are in memory
+* A, B, C, D are unsigned 16-bit integers that are initialized to some value and are in memory.
 * The function prototype for the rotate function is: uint16_t Rotate(uint16_t toRotate, uint16_t amountOfRotation)
-    * The direction of the rotation makes no difference
 
 <!-- -->
 	Result = Rotate(A + B, C) ^ D;
@@ -69,11 +67,10 @@ The following assumptions are made for each instruction set
 * The opcode is always one byte (8 bits).
 * Memory accesses use direct, or absolute, addressing.
 * The variables A, B, C, and D are initially in memory.
-* For a load-store architecture, there are 16 general-purpose registers.
-* When Mem[Addr] is used, this location in memory is NOT the same as A, B, C, D
+    * When Mem[Addr] is used, this location in memory is NOT the same as A, B, C, D
+* Result is the place in memory where the result of the algorithm goes
 
-Result is the place in memory where the result of the algorithm goes.
-Also, the mnemonics used are generic like those used in Computer Architecture,
+The mnemonics used are generic like those used in Computer Architecture,
 5th edition by Hennessy and Patterson Appendix A Section 2.
 
 <!-- -->
@@ -92,7 +89,7 @@ Also, the mnemonics used are generic like those used in Computer Architecture,
         XOR                       #&
         Pop  Result                %
 
-    Load-Store                                       Memory-memory
+    Load-Store (Assume 16 general purpose registers) Memory-memory
     ----------                                       -------------
         Load   R1, A              #&                 Add    Mem[0], A, B       #%
         Load   R2, B              #&                 Rotate Mem[1], C, Mem[0]  #%
@@ -150,26 +147,23 @@ of total memory traffic is most desired. Therefore, the memory-memory ISA was ch
 
   Table: Instruction format
 
-Table 4 shows the instruction format of the instruction set architecture.
+Table 2 shows the instruction format of the instruction set architecture.
 The numbers in the table represent the bit positions of each category.
 Thus the opcode is the MSB of the instruction while Operand0 is the LSB of the instruction.
 Operand2 is the 2nd MSB and Operand1 is the 2nd LSB.
 The length of the instruction is fixed.
-This was chosen because it emphasizes performance and reduces the complexity of decoding.
+This was chosen because it reduces the complexity of decoding which emphasizes performance.
 
-Operand2 is the address in memory where the result is to be stored.
-Operand1 is the address in memory that provides the value for the first operand
-to be supplied to the ALU.
-Operand0 is the address in memory that provides the value for the second operand
-to be supplied to the ALU.
-
-Traditionally, the operands supplied to an ALU are referred to as A and B.
-Operand1 is the equivalent of A and Operand0 is the equivalent of B.
+Operand2 is the address in memory where the result is to be stored. Operand1 is the address in memory that provides the
+value for the first operand to be supplied to the ALU. Operand0 is the address in memory that provides the value for the
+second operand to be supplied to the ALU. 
+Traditionally, the operands supplied to an ALU are referred to as A and B. Operand1 is the equivalent of A and Operand0
+is the equivalent of B.
 
 #### Addressing modes
 
 Addressing modes define how a given instruction set architecture identify the operands of each instruction.
-No addressing modes are supported in this ISA.
+The only addressing modes are supported are direct/absolute.
 The reason for behind this choice had to do with the fact that addressing modes primarily benefit
 the programmer and that was not a goal of this project.
 Thus, all addresses given by an instruction point to a value in memory and not some other object such as a register.
@@ -232,8 +226,8 @@ described in the previous sections.
 
 Since the architecture is memory-memory and minimizing latency
 is a goal of the project, the latency of the memory employed
-was of utmost importance. The details of these
-modules are discussed in the following sections but
+was of utmost importance. The details of the memory
+are discussed in the following sections but
 their latency clearly dictates the clock period
 to be used for the implementation.
 The ALU is the second most important part of the architecture.
@@ -245,7 +239,7 @@ With regard to encryption, in algorithms like IDEA,
 the latency of the ALU is especially prominent because
 of sophisticated operations like multiplication modulo $2^{16}$ + 1.
 These considerations played a major role in the
-development of the memory and ALU.
+development of the architecture as a whole.
 
 ### Overview
 
@@ -309,8 +303,9 @@ locations in memory and then pass them on to the ALU. This stage takes two cycle
 
 The ALU uses the op code from the decode stage to determine what operation to perform
 once the memory module has supplied the operands. Once they are supplied, the ALU performs
-the operation and yields the result. The amount of cycle this stage takes to complete
-varies based on the operation to be performed.
+the operation and yields the result. The amount of cycles this stage takes to complete
+varies based on the operation to be performed. Specific timing for each instruction is provided
+in the ALU section, however on average this stage takes 11 cycles.
 
 ##### Write Back / Branch Completion
 
@@ -318,7 +313,7 @@ Once the ALU has completed its operation, the result is written back to memory.
 At the completion of the operation the flags of the ALU are set.
 These flags are set regardless of the instruction being a branch.
 If the instruction is a branch, then they are used for determining
-the outcome of the branch.
+the outcome of the branch. No write-back occurs during a branch/jump instruction.
 
 ### Functional Description
 
@@ -511,7 +506,7 @@ instructions specified by the ISA.
 
 A Harvard architecture was chosen for instruction memory and data.
 This means that the instruction memory and data memory are separated.
-The program counter has its own internal also has its own internal ALU for addition.
+The program counter has its own internal also has its own internal adder for addition.
 This means that the program counter doesn't need the ALU that performs operations on the operands to increment.
 These choices were made to avoid structural hazards.
 
@@ -519,6 +514,7 @@ These choices were made to avoid structural hazards.
 
 The memory module has three ports with two being read-only.
 This means only one port can be written to.
+It also allows for memory reads and writes and the same time.
 This choice was made to avoid a memory bottleneck.
 
 #### Lowering latency
@@ -593,7 +589,8 @@ are the results of steps 11, 12, 13, and 14. These are the input to the next
 round. This happens eight times and on the eight round the inner blocks are
 swapped then followed by a final output transformation.
 
-The final output transformation consists of the four steps in the table below.
+The final output transformation consists of the four steps in Table 8.
+These four steps are then combined to produce the 64-bit ciphertext.
 
  --------------------------------------------------------------------------------------------------------------------------------------------
  Step  Operation               Instruction                              Step  Operation               Instruction
@@ -605,27 +602,45 @@ The final output transformation consists of the four steps in the table below.
 
  Table: The "half-round" transformation to finish IDEA encryption 
 
-These four steps are then combined to produce the 64-bit ciphertext.
-
 ### Simulation
 
-The architecture was simulated using python.
-The subkeys are pre-computed with the procedure described in the previous section.
-Memory image is initialized with the subkeys followed by the
-1024 bits of plaintext. The key used was 0x7802c45144634a43fa10a15c405a4a42.
+A cycle accurate simulation for the architecture was programmed in python and used to encrypt
+1024 bits of data using the IDEA algorithm.
+A 128 bit key was used to pre-compute the subkeys, using the procedure described in
+the previos section. The subkeys along with the 1024 bits of data were placed
+in a memory image where each line is 32 bits wide.
+Each line in the memory image represents two addresses.
+For instance, the MSB of line 1 represents address 0 and the LSB represents address 1.
+The simulation was programmed to output another memory image that is
+formatted the same way.
+
+The key used was 0x7802c45144634a43fa10a15c405a4a42.
 The 1024 bits of plaintext were varied for testing purposes.
 However, for verification purposes, one block of plaintext
 was hardcoded to ensure the IDEA algorithm was working properly.
 This block of plaintext was 0x20822C1109510840.
+The result of encrypting this block of plaintext with that key
+should be 0x627bbcdcbe7bd9ac. That result can be found on
+lines 29 and 30 of the output memory image which are addresses
+56, 57, 58, and 59.
 
-The code for generating the memory image is in gtv.py and the algorithm for
-generating the subkeys is in IDEA.py. See generate_memory_image in gtv.py
-and create_subkeys in IDEA.py 
+There is a README included with the code and this report that
+explains more details about the simulation.
 
-The implementation of the IDEA algorithm for this architecture is in program.hex.
-The simulation showed that the program takes 40480 clock cycles to execute.
-With a clock period of 10ns, that is 404.8 microseconds.
-There is a README included with this report that explains how to run the simulation.
+#### Results
+
+The simulation showed that the processor takes 40390 clock cycles to
+encrypt the 1024 bits of data.
+With a clock period of 10ns, that is 403.9 microseconds.
+
+### Future work
+
+A clock accurate simulation for this architecture has been developed using the full power of python's HDL called [MyHDL](http://myhdl.org).
+There are still some bugs that are being worked out so it was not ready to be turned in with this project.
+But it has been made available for others to share in this academic experience.
+It can be located at https://github.com/wrh2/pyProcessor.
+When it is finished, MyHDL will be used to translate the code to Verilog and VHDL.
+It will then be tweaked so that it can be used on an FPGA.
 
 References
 ==========
