@@ -20,7 +20,14 @@ class TestIDEA(unittest.TestCase):
 		plaintext = modbv(0x100020003)[64:]
 		key = modbv(0x10002000300040005000600070008)[128:]
 		cipher = encrypt(plaintext, create_subkeys(key))
-		uncipher = encrypt(cipher, create_subkeys(key, encrypt=False), verbose=True)
+		uncipher = encrypt(cipher, create_subkeys(key, encrypt=False))
+		self.assertEqual(plaintext, uncipher)
+
+	def decrypt2(self):
+		plaintext = modbv(0x05320a6414c819fa)[64:]
+		key = modbv(0x006400c8012c019001f4025802bc0320)[128:]
+		cipher = encrypt(plaintext, create_subkeys(key))
+		uncipher = encrypt(cipher, create_subkeys(key, encrypt=False))
 		self.assertEqual(plaintext, uncipher)
 
 if __name__ == '__main__':
